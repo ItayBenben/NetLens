@@ -1,0 +1,99 @@
+name: NetLens
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    VERSIONING_SYSTEM: apple-generic
+    CODE_SIGN_STYLE: Automatic
+    # Set this to your Apple Developer Team ID before building.
+    DEVELOPMENT_TEAM: ""
+    TARGETED_DEVICE_FAMILY: "1"
+
+targets:
+  NetLens:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: ["*.plist", "*.entitlements"]
+      - Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: NetLens
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    entitlements:
+      path: App/NetLens.entitlements
+      properties:
+        com.apple.developer.networking.networkextension:
+          - packet-tunnel-provider
+        com.apple.security.application-groups:
+          - group.com.example.netlens
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.netlens
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: PacketTunnel
+
+  # Free edition: no Network Extension, no entitlements, so a free Apple ID can sign it.
+  NetLensLite:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: ["*.plist", "*.entitlements"]
+      - Shared
+    info:
+      path: App/Info-Lite.plist
+      properties:
+        CFBundleDisplayName: NetLens
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.netlens.lite
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) LITE
+
+  PacketTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: PacketTunnel
+        excludes: ["*.plist", "*.entitlements"]
+      - Shared
+    info:
+      path: PacketTunnel/Info.plist
+      properties:
+        CFBundleDisplayName: NetLens Monitor
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+    entitlements:
+      path: PacketTunnel/PacketTunnel.entitlements
+      properties:
+        com.apple.developer.networking.networkextension:
+          - packet-tunnel-provider
+        com.apple.security.application-groups:
+          - group.com.example.netlens
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.netlens.PacketTunnel

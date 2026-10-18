@@ -1,0 +1,46 @@
+# Cloud build: compiles NetLens on Codemagic's Macs, signs it and uploads it to TestFlight.
+# Setup steps are in CLOUD_BUILD.md.
+workflows:
+  testflight:
+    name: NetLens → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # Must match the name you give the API key in Codemagic → Team settings → Integrations.
+      app_store_connect: NetLens API Key
+    environment:
+      groups:
+        - signing            # contains CERTIFICATE_PRIVATE_KEY
+      vars:
+        BUNDLE_ID: com.example.netlens
+        XCODE_PROJECT: NetLens.xcodeproj
+        XCODE_SCHEME: NetLens
+      xcode: latest
+    scripts:
+      - name: Generate Xcode project
+        script: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Fetch or create signing certificate and profiles
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID.PacketTunnel" \
+            --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Set build number
+        script: agvtool new-version -all "$BUILD_NUMBER"
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
